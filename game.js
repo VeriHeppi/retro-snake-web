@@ -50,9 +50,10 @@ let state = {
 
 const audioManager = (() => {
   let ctxAudio = null;
-  let musicInterval = null;
   let musicEnabled = true;
   let sfxEnabled = true;
+  const MUSIC_PATH = "assets/music/retro_theme_1.ogg";
+  let musicAudio = null;
 
   function ensureContext() {
     if (!ctxAudio) {
@@ -83,7 +84,7 @@ const audioManager = (() => {
   }
 
   function playFood() {
-    playBeep(900, 0.09, "square", 0.18);
+    playBeep(900, 0.09, "square", 0.16);
   }
 
   function playDeath() {
@@ -96,7 +97,7 @@ const audioManager = (() => {
     osc.type = "square";
     osc.frequency.setValueAtTime(600, t0);
     osc.frequency.exponentialRampToValueAtTime(80, t0 + 0.4);
-    gain.gain.setValueAtTime(0.25, t0);
+    gain.gain.setValueAtTime(0.22, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
     osc.connect(gain).connect(ctxAudio.destination);
     osc.start(t0);
@@ -108,24 +109,31 @@ const audioManager = (() => {
     setTimeout(() => playBeep(990, 0.09, "square", 0.2), 90);
   }
 
+  function ensureMusicElement() {
+    if (!musicAudio) {
+      const audio = new Audio(MUSIC_PATH);
+      audio.loop = true;
+      audio.volume = 0.45;
+      musicAudio = audio;
+    }
+  }
+
   function startMusic() {
     if (!musicEnabled) return;
-    ensureContext();
-    if (!ctxAudio || musicInterval) return;
-    let step = 0;
-    const pattern = [440, 660, 880, 660, 494, 660, 880, 660];
-    musicInterval = setInterval(() => {
-      if (!musicEnabled) return;
-      const freq = pattern[step % pattern.length];
-      playBeep(freq, 0.14, "square", 0.06);
-      step += 1;
-    }, 220);
+    ensureMusicElement();
+    if (!musicAudio) return;
+    const playPromise = musicAudio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Ignore play errors (e.g. autoplay restrictions).
+      });
+    }
   }
 
   function stopMusic() {
-    if (musicInterval) {
-      clearInterval(musicInterval);
-      musicInterval = null;
+    if (musicAudio) {
+      musicAudio.pause();
+      musicAudio.currentTime = 0;
     }
   }
 
