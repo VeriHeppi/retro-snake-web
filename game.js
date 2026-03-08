@@ -1,7 +1,7 @@
 "use strict";
 
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas ? canvas.getContext("2d") : null;
 
 const scoreEl = document.getElementById("scoreValue");
 const overlayEl = document.getElementById("overlay");
@@ -17,8 +17,8 @@ const trackTitleEl = document.getElementById("trackTitle");
 const trackAuthorEl = document.getElementById("trackAuthor");
 
 const CELL_SIZE = 24;
-const COLS = Math.floor(canvas.width / CELL_SIZE);
-const ROWS = Math.floor(canvas.height / CELL_SIZE);
+let COLS = canvas ? Math.floor(canvas.width / CELL_SIZE) : 26;
+let ROWS = canvas ? Math.floor(canvas.height / CELL_SIZE) : 20;
 
 const MOVES_PER_SECOND = 8;
 const MOVE_INTERVAL = 1000 / MOVES_PER_SECOND;
@@ -141,30 +141,48 @@ const audioManager = (() => {
       .catch(() => {
         musicConfig = null;
         musicReady = false;
+        if (trackChangeListener) {
+          trackChangeListener({ title: "Music unavailable", author: "tracks.json failed to load" });
+        }
       });
     return configPromise;
   }
 
   function initialiseTracks(tracks) {
     trackMap.clear();
-    shuffledTrackIds = tracks.map((t) => t.id);
-    shuffleArray(shuffledTrackIds);
+    const defaultId = musicConfig && musicConfig.defaultTrackId;
+    const validTracks = tracks.filter((t) => t.id && t.file);
+    const ids = validTracks.map((t) => t.id);
+    if (defaultId && ids.includes(defaultId)) {
+      const rest = ids.filter((id) => id !== defaultId);
+      shuffleArray(rest);
+      shuffledTrackIds = [defaultId, ...rest];
+    } else {
+      shuffledTrackIds = [...ids];
+      shuffleArray(shuffledTrackIds);
+    }
     currentTrackIndex = 0;
     currentTrackId = shuffledTrackIds[0] || null;
 
-    tracks.forEach((track) => {
-      if (!track.id || !track.file) return;
+    validTracks.forEach((track) => {
+      if (trackMap.has(track.id)) return;
       const audio = new Audio("assets/music/" + track.file);
       audio.preload = "auto";
       audio.loop = false;
       audio.volume = 0.45;
       audio.addEventListener("ended", handleTrackEnded);
+      audio.addEventListener("error", () => {
+        if (trackChangeListener) {
+          trackChangeListener({ title: "Track unavailable", author: track.author || "Unknown" });
+        }
+      });
       trackMap.set(track.id, { meta: track, audio });
     });
     fireTrackChange();
   }
 
   function shuffleArray(arr) {
+    if (!arr || arr.length <= 1) return;
     for (let i = arr.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       const tmp = arr[i];
@@ -173,7 +191,9 @@ const audioManager = (() => {
     }
   }
 
-  function handleTrackEnded() {
+  function handleTrackEnded(event) {
+    const entry = getCurrentEntry();
+    if (!entry || event.target !== entry.audio) return;
     advanceToNextTrack();
   }
 
@@ -297,7 +317,8 @@ function resetGame() {
   ];
   state.direction = Direction.RIGHT;
   state.nextDirection = Direction.RIGHT;
-  state.food = spawnFood();
+  const food = spawnFood();
+  state.food = food;
   state.score = 0;
   state.lastTime = 0;
   state.accumulator = 0;
@@ -356,9 +377,12 @@ function gameLoop(timestamp) {
   state.lastTime = timestamp;
   state.accumulator += delta;
 
-  while (state.accumulator >= MOVE_INTERVAL) {
+  const MAX_UPDATES_PER_FRAME = 10;
+  let updatesThisFrame = 0;
+  while (state.accumulator >= MOVE_INTERVAL && updatesThisFrame < MAX_UPDATES_PER_FRAME) {
     update();
     state.accumulator -= MOVE_INTERVAL;
+    updatesThisFrame += 1;
   }
 
   draw();
@@ -394,7 +418,8 @@ function update() {
     state.score += 10;
     updateScore();
     audioManager.playFood();
-    state.food = spawnFood();
+    const newFood = spawnFood();
+    state.food = newFood;
   } else {
     state.snake.pop();
   }
@@ -414,16 +439,14 @@ function handleGameOver() {
 }
 
 function spawnFood() {
-  let x;
-  let y;
-  let tries = 0;
-  do {
-    x = Math.floor(Math.random() * COLS);
-    y = Math.floor(Math.random() * ROWS);
-    tries += 1;
-    if (tries > 1000) break;
-  } while (isOnSnake({ x, y }));
-  return { x, y };
+  const empty = [];
+  for (let y = 0; y < ROWS; y += 1) {
+    for (let x = 0; x < COLS; x += 1) {
+      if (!isOnSnake({ x, y })) empty.push({ x, y });
+    }
+  }
+  if (empty.length === 0) return null;
+  return empty[Math.floor(Math.random() * empty.length)];
 }
 
 function isOnSnake(pos) {
@@ -527,20 +550,26 @@ function handleDirectionChange(newDir) {
 function handleKeyDown(event) {
   const key = event.key.toLowerCase();
   if (key === "arrowup" || key === "w") {
+    event.preventDefault();
     handleDirectionChange(Direction.UP);
   } else if (key === "arrowdown" || key === "s") {
+    event.preventDefault();
     handleDirectionChange(Direction.DOWN);
   } else if (key === "arrowleft" || key === "a") {
+    event.preventDefault();
     handleDirectionChange(Direction.LEFT);
   } else if (key === "arrowright" || key === "d") {
+    event.preventDefault();
     handleDirectionChange(Direction.RIGHT);
   } else if (key === "enter") {
+    event.preventDefault();
     if (!state.running) {
       startGame();
     } else if (state.gameOver) {
       startGame();
     }
   } else if (key === "p") {
+    event.preventDefault();
     togglePause();
   }
 }
@@ -550,7 +579,7 @@ function handleStartButton() {
     resetGame();
   }
   startGame();
-  canvas.focus();
+  if (canvas) canvas.focus();
 }
 
 function updatePauseButton() {
@@ -563,7 +592,6 @@ function updatePauseButton() {
 function handlePauseButton() {
   if (!state.running || state.gameOver) return;
   togglePause();
-  updatePauseButton();
 }
 
 function handleToggleMusic() {
@@ -586,10 +614,18 @@ function attachEventListeners() {
   if (btnToggleSfx) btnToggleSfx.addEventListener("click", handleToggleSfx);
 }
 
+function updateGridSize() {
+  if (!canvas) return;
+  COLS = Math.floor(canvas.width / CELL_SIZE);
+  ROWS = Math.floor(canvas.height / CELL_SIZE);
+}
+
+window.addEventListener("resize", updateGridSize);
 audioManager.loadMusicConfig();
 audioManager.setTrackChangeListener((info) => {
   showTrackBanner(info);
 });
 attachEventListeners();
+updateGridSize();
 resetGame();
 
