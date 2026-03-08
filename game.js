@@ -11,6 +11,9 @@ const overlaySubtitleEl = document.getElementById("overlaySubtitle");
 const btnStart = document.getElementById("btnStart");
 const btnToggleMusic = document.getElementById("btnToggleMusic");
 const btnToggleSfx = document.getElementById("btnToggleSfx");
+const trackBannerEl = document.getElementById("trackBanner");
+const trackTitleEl = document.getElementById("trackTitle");
+const trackAuthorEl = document.getElementById("trackAuthor");
 
 const CELL_SIZE = 24;
 const COLS = Math.floor(canvas.width / CELL_SIZE);
@@ -50,9 +53,16 @@ let state = {
 
 const audioManager = (() => {
   let ctxAudio = null;
-  let musicInterval = null;
   let musicEnabled = true;
   let sfxEnabled = true;
+  let musicConfig = null;
+  let musicReady = false;
+  let configPromise = null;
+  const trackMap = new Map();
+  let shuffledTrackIds = [];
+  let currentTrackIndex = 0;
+  let currentTrackId = null;
+  let trackChangeListener = null;
 
   function ensureContext() {
     if (!ctxAudio) {
@@ -83,7 +93,7 @@ const audioManager = (() => {
   }
 
   function playFood() {
-    playBeep(900, 0.09, "square", 0.18);
+    playBeep(900, 0.09, "square", 0.16);
   }
 
   function playDeath() {
@@ -96,7 +106,7 @@ const audioManager = (() => {
     osc.type = "square";
     osc.frequency.setValueAtTime(600, t0);
     osc.frequency.exponentialRampToValueAtTime(80, t0 + 0.4);
-    gain.gain.setValueAtTime(0.25, t0);
+    gain.gain.setValueAtTime(0.22, t0);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45);
     osc.connect(gain).connect(ctxAudio.destination);
     osc.start(t0);
@@ -108,25 +118,126 @@ const audioManager = (() => {
     setTimeout(() => playBeep(990, 0.09, "square", 0.2), 90);
   }
 
+  function loadMusicConfig() {
+    if (configPromise) {
+      return configPromise;
+    }
+    configPromise = fetch("assets/music/tracks.json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load tracks.json");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!data || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+          throw new Error("tracks.json has no tracks");
+        }
+        musicConfig = data;
+        initialiseTracks(data.tracks);
+        musicReady = true;
+      })
+      .catch(() => {
+        musicConfig = null;
+        musicReady = false;
+      });
+    return configPromise;
+  }
+
+  function initialiseTracks(tracks) {
+    trackMap.clear();
+    shuffledTrackIds = tracks.map((t) => t.id);
+    shuffleArray(shuffledTrackIds);
+    currentTrackIndex = 0;
+    currentTrackId = shuffledTrackIds[0] || null;
+
+    tracks.forEach((track) => {
+      if (!track.id || !track.file) return;
+      const audio = new Audio("assets/music/" + track.file);
+      audio.preload = "auto";
+      audio.loop = false;
+      audio.volume = 0.45;
+      audio.addEventListener("ended", handleTrackEnded);
+      trackMap.set(track.id, { meta: track, audio });
+    });
+    fireTrackChange();
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+  }
+
+  function handleTrackEnded() {
+    advanceToNextTrack();
+  }
+
+  function advanceToNextTrack() {
+    if (!shuffledTrackIds.length) return;
+    currentTrackIndex += 1;
+    if (currentTrackIndex >= shuffledTrackIds.length) {
+      shuffleArray(shuffledTrackIds);
+      currentTrackIndex = 0;
+    }
+    currentTrackId = shuffledTrackIds[currentTrackIndex];
+    fireTrackChange();
+    if (musicEnabled) {
+      playCurrentTrack();
+    }
+  }
+
+  function getCurrentEntry() {
+    if (!currentTrackId) return null;
+    return trackMap.get(currentTrackId) || null;
+  }
+
+  function playCurrentTrack() {
+    const entry = getCurrentEntry();
+    if (!entry) return;
+    const audio = entry.audio;
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Ignore play errors (e.g. autoplay restrictions).
+      });
+    }
+  }
+
+  function stopCurrentTrack() {
+    const entry = getCurrentEntry();
+    if (!entry) return;
+    entry.audio.pause();
+    entry.audio.currentTime = 0;
+  }
+
+  function fireTrackChange() {
+    if (!trackChangeListener) return;
+    const info = getCurrentTrackInfo();
+    if (info) {
+      trackChangeListener(info);
+    }
+  }
+
   function startMusic() {
     if (!musicEnabled) return;
-    ensureContext();
-    if (!ctxAudio || musicInterval) return;
-    let step = 0;
-    const pattern = [440, 660, 880, 660, 494, 660, 880, 660];
-    musicInterval = setInterval(() => {
-      if (!musicEnabled) return;
-      const freq = pattern[step % pattern.length];
-      playBeep(freq, 0.14, "square", 0.06);
-      step += 1;
-    }, 220);
+    loadMusicConfig().then(() => {
+      if (!musicEnabled || !musicReady) return;
+      if (!currentTrackId && shuffledTrackIds.length) {
+        currentTrackIndex = 0;
+        currentTrackId = shuffledTrackIds[0];
+        fireTrackChange();
+      }
+      playCurrentTrack();
+    });
   }
 
   function stopMusic() {
-    if (musicInterval) {
-      clearInterval(musicInterval);
-      musicInterval = null;
-    }
+    stopCurrentTrack();
   }
 
   function setMusicEnabled(enabled) {
@@ -150,6 +261,15 @@ const audioManager = (() => {
     return sfxEnabled;
   }
 
+  function getCurrentTrackInfo() {
+    const entry = getCurrentEntry();
+    return entry ? entry.meta : null;
+  }
+
+  function setTrackChangeListener(listener) {
+    trackChangeListener = listener;
+  }
+
   return {
     playFood,
     playDeath,
@@ -160,6 +280,9 @@ const audioManager = (() => {
     setSfxEnabled,
     isMusicEnabled,
     isSfxEnabled,
+    loadMusicConfig,
+    getCurrentTrackInfo,
+    setTrackChangeListener,
   };
 })();
 
@@ -374,6 +497,18 @@ function draw() {
   }
 }
 
+function showTrackBanner(trackInfo) {
+  if (!trackBannerEl || !trackTitleEl || !trackAuthorEl || !trackInfo) return;
+  trackTitleEl.textContent = trackInfo.title || "Unknown Track";
+  trackAuthorEl.textContent = trackInfo.author || "Unknown Artist";
+
+  trackBannerEl.classList.remove("track-banner--visible");
+  // Force reflow so the transition retriggers when we add the class again.
+  // eslint-disable-next-line no-unused-expressions
+  trackBannerEl.offsetWidth;
+  trackBannerEl.classList.add("track-banner--visible");
+}
+
 function handleDirectionChange(newDir) {
   if (
     state.direction.x + newDir.x === 0 &&
@@ -432,6 +567,10 @@ function attachEventListeners() {
   if (btnToggleSfx) btnToggleSfx.addEventListener("click", handleToggleSfx);
 }
 
+audioManager.loadMusicConfig();
+audioManager.setTrackChangeListener((info) => {
+  showTrackBanner(info);
+});
 attachEventListeners();
 resetGame();
 
