@@ -9,6 +9,7 @@ const overlayTitleEl = document.getElementById("overlayTitle");
 const overlaySubtitleEl = document.getElementById("overlaySubtitle");
 
 const btnStart = document.getElementById("btnStart");
+const btnPause = document.getElementById("btnPause");
 const btnToggleMusic = document.getElementById("btnToggleMusic");
 const btnToggleSfx = document.getElementById("btnToggleSfx");
 const trackBannerEl = document.getElementById("trackBanner");
@@ -305,6 +306,7 @@ function resetGame() {
   state.paused = false;
   updateScore();
   setOverlay(true, "Press Enter or Start", "Use arrows or WASD. Avoid yourself.");
+  updatePauseButton();
   draw();
 }
 
@@ -319,6 +321,7 @@ function startGame() {
   state.lastTime = 0;
   state.accumulator = 0;
   setOverlay(false);
+  updatePauseButton();
   audioManager.playStart();
   audioManager.startMusic();
   window.requestAnimationFrame(gameLoop);
@@ -328,7 +331,7 @@ function togglePause() {
   if (!state.running || state.gameOver) return;
   state.paused = !state.paused;
   if (state.paused) {
-    setOverlay(true, "Paused", "Press P or Start to resume.");
+    setOverlay(true, "Paused", "Press P or click Resume to continue.");
     audioManager.stopMusic();
   } else {
     setOverlay(false);
@@ -337,6 +340,7 @@ function togglePause() {
     state.accumulator = 0;
     window.requestAnimationFrame(gameLoop);
   }
+  updatePauseButton();
 }
 
 function gameLoop(timestamp) {
@@ -406,6 +410,7 @@ function handleGameOver() {
     "Game Over",
     "Final score: " + state.score + ". Press Enter or Start to play again."
   );
+  updatePauseButton();
 }
 
 function spawnFood() {
@@ -541,11 +546,24 @@ function handleKeyDown(event) {
 }
 
 function handleStartButton() {
-  if (!state.running || state.gameOver) {
-    startGame();
-  } else {
-    togglePause();
+  if (state.running && !state.gameOver) {
+    resetGame();
   }
+  startGame();
+  canvas.focus();
+}
+
+function updatePauseButton() {
+  if (!btnPause) return;
+  const canPause = state.running && !state.gameOver;
+  btnPause.disabled = !canPause;
+  btnPause.textContent = state.paused ? "Resume" : "Pause";
+}
+
+function handlePauseButton() {
+  if (!state.running || state.gameOver) return;
+  togglePause();
+  updatePauseButton();
 }
 
 function handleToggleMusic() {
@@ -563,6 +581,7 @@ function handleToggleSfx() {
 function attachEventListeners() {
   window.addEventListener("keydown", handleKeyDown);
   if (btnStart) btnStart.addEventListener("click", handleStartButton);
+  if (btnPause) btnPause.addEventListener("click", handlePauseButton);
   if (btnToggleMusic) btnToggleMusic.addEventListener("click", handleToggleMusic);
   if (btnToggleSfx) btnToggleSfx.addEventListener("click", handleToggleSfx);
 }
