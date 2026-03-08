@@ -1,0 +1,30 @@
+{
+  "tracks": [
+    {
+      "id": "1",
+      "file": "mondamusic-synthwave-retro-80s-491697.mp3",
+      "title": "Synthwave Retro 80s",
+      "author": "Music by MondaMusic from Pixabay",
+      "sourceUrl": "",
+      "license": "no-copyright"
+    },
+    {
+      "id": "2",
+      "file": "mondamusic-synthwave-retro-pop-80s-491693.mp3",
+      "title": "Synthwave Retro Pop 80s",
+      "author": "Music by MondaMusic from Pixabay",
+      "sourceUrl": "",
+      "license": "no-copyright"
+    },
+    {
+      "id": "3",
+      "file": "rovador-back-to-the-80s-163722.mp3",
+      "title": "Back to the 80s",
+      "author": "Music by Roman Orekhov from Pixabay",
+      "sourceUrl": "",
+      "license": "no-copyright"
+    }
+  ],
+  "defaultTrackId": "1"
+}
+

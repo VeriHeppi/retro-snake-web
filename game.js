@@ -11,6 +11,9 @@ const overlaySubtitleEl = document.getElementById("overlaySubtitle");
 const btnStart = document.getElementById("btnStart");
 const btnToggleMusic = document.getElementById("btnToggleMusic");
 const btnToggleSfx = document.getElementById("btnToggleSfx");
+const trackBannerEl = document.getElementById("trackBanner");
+const trackTitleEl = document.getElementById("trackTitle");
+const trackAuthorEl = document.getElementById("trackAuthor");
 
 const CELL_SIZE = 24;
 const COLS = Math.floor(canvas.width / CELL_SIZE);
@@ -52,8 +55,14 @@ const audioManager = (() => {
   let ctxAudio = null;
   let musicEnabled = true;
   let sfxEnabled = true;
-  const MUSIC_PATH = "assets/music/retro_theme_1.ogg";
-  let musicAudio = null;
+  let musicConfig = null;
+  let musicReady = false;
+  let configPromise = null;
+  const trackMap = new Map();
+  let shuffledTrackIds = [];
+  let currentTrackIndex = 0;
+  let currentTrackId = null;
+  let trackChangeListener = null;
 
   function ensureContext() {
     if (!ctxAudio) {
@@ -109,20 +118,89 @@ const audioManager = (() => {
     setTimeout(() => playBeep(990, 0.09, "square", 0.2), 90);
   }
 
-  function ensureMusicElement() {
-    if (!musicAudio) {
-      const audio = new Audio(MUSIC_PATH);
-      audio.loop = true;
+  function loadMusicConfig() {
+    if (configPromise) {
+      return configPromise;
+    }
+    configPromise = fetch("assets/music/tracks.json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load tracks.json");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!data || !Array.isArray(data.tracks) || data.tracks.length === 0) {
+          throw new Error("tracks.json has no tracks");
+        }
+        musicConfig = data;
+        initialiseTracks(data.tracks);
+        musicReady = true;
+      })
+      .catch(() => {
+        musicConfig = null;
+        musicReady = false;
+      });
+    return configPromise;
+  }
+
+  function initialiseTracks(tracks) {
+    trackMap.clear();
+    shuffledTrackIds = tracks.map((t) => t.id);
+    shuffleArray(shuffledTrackIds);
+    currentTrackIndex = 0;
+    currentTrackId = shuffledTrackIds[0] || null;
+
+    tracks.forEach((track) => {
+      if (!track.id || !track.file) return;
+      const audio = new Audio("assets/music/" + track.file);
+      audio.preload = "auto";
+      audio.loop = false;
       audio.volume = 0.45;
-      musicAudio = audio;
+      audio.addEventListener("ended", handleTrackEnded);
+      trackMap.set(track.id, { meta: track, audio });
+    });
+    fireTrackChange();
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
     }
   }
 
-  function startMusic() {
-    if (!musicEnabled) return;
-    ensureMusicElement();
-    if (!musicAudio) return;
-    const playPromise = musicAudio.play();
+  function handleTrackEnded() {
+    advanceToNextTrack();
+  }
+
+  function advanceToNextTrack() {
+    if (!shuffledTrackIds.length) return;
+    currentTrackIndex += 1;
+    if (currentTrackIndex >= shuffledTrackIds.length) {
+      shuffleArray(shuffledTrackIds);
+      currentTrackIndex = 0;
+    }
+    currentTrackId = shuffledTrackIds[currentTrackIndex];
+    fireTrackChange();
+    if (musicEnabled) {
+      playCurrentTrack();
+    }
+  }
+
+  function getCurrentEntry() {
+    if (!currentTrackId) return null;
+    return trackMap.get(currentTrackId) || null;
+  }
+
+  function playCurrentTrack() {
+    const entry = getCurrentEntry();
+    if (!entry) return;
+    const audio = entry.audio;
+    audio.currentTime = 0;
+    const playPromise = audio.play();
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise.catch(() => {
         // Ignore play errors (e.g. autoplay restrictions).
@@ -130,11 +208,36 @@ const audioManager = (() => {
     }
   }
 
-  function stopMusic() {
-    if (musicAudio) {
-      musicAudio.pause();
-      musicAudio.currentTime = 0;
+  function stopCurrentTrack() {
+    const entry = getCurrentEntry();
+    if (!entry) return;
+    entry.audio.pause();
+    entry.audio.currentTime = 0;
+  }
+
+  function fireTrackChange() {
+    if (!trackChangeListener) return;
+    const info = getCurrentTrackInfo();
+    if (info) {
+      trackChangeListener(info);
     }
+  }
+
+  function startMusic() {
+    if (!musicEnabled) return;
+    loadMusicConfig().then(() => {
+      if (!musicEnabled || !musicReady) return;
+      if (!currentTrackId && shuffledTrackIds.length) {
+        currentTrackIndex = 0;
+        currentTrackId = shuffledTrackIds[0];
+        fireTrackChange();
+      }
+      playCurrentTrack();
+    });
+  }
+
+  function stopMusic() {
+    stopCurrentTrack();
   }
 
   function setMusicEnabled(enabled) {
@@ -158,6 +261,15 @@ const audioManager = (() => {
     return sfxEnabled;
   }
 
+  function getCurrentTrackInfo() {
+    const entry = getCurrentEntry();
+    return entry ? entry.meta : null;
+  }
+
+  function setTrackChangeListener(listener) {
+    trackChangeListener = listener;
+  }
+
   return {
     playFood,
     playDeath,
@@ -168,6 +280,9 @@ const audioManager = (() => {
     setSfxEnabled,
     isMusicEnabled,
     isSfxEnabled,
+    loadMusicConfig,
+    getCurrentTrackInfo,
+    setTrackChangeListener,
   };
 })();
 
@@ -382,6 +497,18 @@ function draw() {
   }
 }
 
+function showTrackBanner(trackInfo) {
+  if (!trackBannerEl || !trackTitleEl || !trackAuthorEl || !trackInfo) return;
+  trackTitleEl.textContent = trackInfo.title || "Unknown Track";
+  trackAuthorEl.textContent = trackInfo.author || "Unknown Artist";
+
+  trackBannerEl.classList.remove("track-banner--visible");
+  // Force reflow so the transition retriggers when we add the class again.
+  // eslint-disable-next-line no-unused-expressions
+  trackBannerEl.offsetWidth;
+  trackBannerEl.classList.add("track-banner--visible");
+}
+
 function handleDirectionChange(newDir) {
   if (
     state.direction.x + newDir.x === 0 &&
@@ -440,6 +567,10 @@ function attachEventListeners() {
   if (btnToggleSfx) btnToggleSfx.addEventListener("click", handleToggleSfx);
 }
 
+audioManager.loadMusicConfig();
+audioManager.setTrackChangeListener((info) => {
+  showTrackBanner(info);
+});
 attachEventListeners();
 resetGame();
 

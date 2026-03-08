@@ -257,6 +257,55 @@ canvas#gameCanvas {
   opacity: 0.8;
 }
 
+.track-banner {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 204, 0.9);
+  background: radial-gradient(circle at top, rgba(4, 12, 40, 0.98), rgba(0, 0, 16, 0.96));
+  box-shadow:
+    0 0 10px rgba(0, 255, 204, 0.9),
+    0 0 26px rgba(0, 128, 255, 0.85);
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e7ffff;
+  transform: translateX(140%);
+  opacity: 0;
+  transition:
+    transform 220ms ease-out,
+    opacity 220ms ease-out;
+}
+
+.track-banner--visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.track-label {
+  color: #ffde73;
+  text-shadow: 0 0 6px rgba(255, 222, 115, 0.9);
+}
+
+.track-title {
+  color: #00ffcc;
+}
+
+.track-author {
+  color: #b0c8ff;
+}
+
+.track-separator {
+  opacity: 0.6;
+}
+
 @media (max-width: 900px) {
   .main {
     flex-direction: column;
