@@ -31,7 +31,7 @@
               <div class="score-label">SCORE</div>
               <div id="scoreValue" class="score-value">0</div>
             </div>
-            <canvas id="gameCanvas" width="640" height="480"></canvas>
+            <canvas id="gameCanvas" width="640" height="480" tabindex="0"></canvas>
             <div id="overlay" class="overlay overlay-visible">
               <div class="overlay-content">
                 <h2 id="overlayTitle">Press Enter or Start</h2>
@@ -45,6 +45,7 @@
 
           <div class="controls">
             <button id="btnStart" class="btn">Start / Restart</button>
+            <button id="btnPause" class="btn" disabled>Pause</button>
             <button id="btnToggleMusic" class="btn">Music: On</button>
             <button id="btnToggleSfx" class="btn">SFX: On</button>
           </div>
@@ -65,6 +66,7 @@
             <li><strong>Arrows / WASD</strong> &mdash; Move</li>
             <li><strong>Enter</strong> &mdash; Start / Restart</li>
             <li><strong>P</strong> &mdash; Pause / Resume</li>
+            <li><strong>Pause</strong> &mdash; Pause / Resume</li>
             <li><strong>Buttons</strong> &mdash; Toggle music and SFX</li>
           </ul>
         </section>
