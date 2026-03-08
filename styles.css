@@ -13,102 +13,53 @@ body {
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #222244, #050510 60%, #000000);
   color: #f5f5f5;
+  overflow-x: hidden;
+}
+
+/* ===== Arcade Scene (background + game canvas) ===== */
+.arcade-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Background fills entire viewport */
+.arcade-scene__bg {
+  position: absolute;
+  inset: 0;
+  background-image: url("assets/img/Arcade_hall.png");
+  /* 180% zooms in on center; tweak 150-250 for different zoom levels */
+  background-size: 180%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Arcade cabinet screen area - % values relative to viewport */
+.arcade-scene__screen {
+  position: absolute;
+  /* top: vertical position within view - tweak to align */
+  top: 4%;
+  /* left: horizontal position - tweak to align */
+  left: 33.5%;
+  /* width: monitor width within view - tweak to fit screen opening */
+  width: 33%;
+  /* height: auto from aspect-ratio to match game (624:480), prevents black bars */
+  aspect-ratio: 624 / 480;
   display: flex;
   align-items: stretch;
-  justify-content: center;
-}
-
-.page {
-  min-height: 100vh;
-  width: 100%;
-  max-width: 1200px;
-  padding: 24px 16px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.header {
-  text-align: center;
-}
-
-.title {
-  font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 1.8rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #00ffcc;
-  text-shadow: 0 0 8px #00ffcc, 0 0 16px #00ffcc;
-  margin: 0 0 8px;
-}
-
-.subtitle {
-  margin: 0;
-  color: #ccccff;
-  font-size: 0.9rem;
-}
-
-.main {
-  display: flex;
-  flex: 1;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.game-panel {
-  flex: 0 0 auto;
-}
-
-.game-frame {
-  position: relative;
-  width: 640px;
-  max-width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 16px;
-  padding: 16px;
-  background: radial-gradient(circle at top, #101036, #02020b 70%);
-  box-shadow:
-    0 0 0 4px #181832,
-    0 0 24px rgba(0, 255, 204, 0.5),
-    0 0 80px rgba(0, 128, 255, 0.4);
+  justify-content: stretch;
   overflow: hidden;
-}
-
-.game-frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.35) 0,
-    rgba(0, 0, 0, 0.35) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.game-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.18), transparent 55%);
-  mix-blend-mode: screen;
-  pointer-events: none;
 }
 
 .game-hud {
   position: absolute;
-  top: 10px;
-  right: 14px;
+  top: 8px;
+  right: 12px;
   z-index: 3;
   text-align: right;
   font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   line-height: 1.4;
   color: #99fffa;
   text-shadow: 0 0 4px #00e6ff;
@@ -119,17 +70,18 @@ body {
 }
 
 .score-value {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
+/* Canvas fills container; container has aspect-ratio 624:480 so no black bars or stretching */
 canvas#gameCanvas {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  background: radial-gradient(circle at center, #050510, #010104);
+  background: #050510;
   image-rendering: pixelated;
   position: relative;
   z-index: 1;
+  display: block;
 }
 
 .overlay {
@@ -167,34 +119,74 @@ canvas#gameCanvas {
 .overlay-content h2 {
   font-family: "Press Start 2P", system-ui, sans-serif;
   margin: 0 0 10px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #00ffcc;
 }
 
 .overlay-content p {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #d0f7ff;
 }
 
+/* ===== Page Overlay (header, controls, sidebar, footer) ===== */
+.page-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.page-overlay > * {
+  pointer-events: auto;
+}
+
+.header {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.title {
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00ffcc;
+  text-shadow: 0 0 8px #00ffcc, 0 0 16px #00ffcc;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #ccccff;
+  font-size: 0.75rem;
+}
+
 .controls {
+  position: absolute;
+  bottom: 24%;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  justify-content: center;
 }
 
 .btn {
   font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 0.6rem;
-  padding: 8px 12px;
+  font-size: 0.5rem;
+  padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #00ffcc;
   background: linear-gradient(135deg, #002b36, #004f66);
   color: #e0ffff;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   box-shadow:
     0 0 6px rgba(0, 255, 204, 0.7),
     0 0 18px rgba(0, 128, 255, 0.6);
@@ -219,88 +211,100 @@ canvas#gameCanvas {
     0 0 16px rgba(0, 128, 255, 0.7);
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .sidebar {
-  flex: 1;
-  max-width: 360px;
-  padding: 16px 18px;
-  border-radius: 12px;
-  background: rgba(6, 10, 40, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(0, 40, 80, 0.9),
-    0 0 20px rgba(0, 0, 0, 0.8);
-}
-
-.sidebar h2 {
-  font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 0.9rem;
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #ffde73;
-  text-shadow: 0 0 6px rgba(255, 222, 115, 0.8);
-}
-
-.sidebar ul {
-  padding-left: 18px;
-  margin: 0 0 12px;
-  font-size: 0.8rem;
-  color: #e0e0ff;
-}
-
-.sidebar li + li {
-  margin-top: 4px;
-}
-
-.footer {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #9ba4ff;
-  opacity: 0.8;
-}
-
-.volume-slider {
-  position: fixed;
-  top: 12px;
-  left: 16px;
-  z-index: 20;
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 260px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 255, 204, 0.9);
-  background: radial-gradient(circle at top, rgba(4, 12, 40, 0.98), rgba(0, 0, 16, 0.96));
-  box-shadow:
-    0 0 10px rgba(0, 255, 204, 0.9),
-    0 0 26px rgba(0, 128, 255, 0.85);
-  font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 0.5rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #99fffa;
-  text-shadow: 0 0 4px #00e6ff;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 16px;
+  background: rgba(0, 10, 30, 0.85);
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
 }
 
-.volume-label {
+.sidebar-track-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 255, 204, 0.5);
+  font-size: 0.75rem;
+}
+
+.sidebar-track-banner .track-label {
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 0.55rem;
   color: #ffde73;
   text-shadow: 0 0 6px rgba(255, 222, 115, 0.9);
 }
 
-.volume-slider input[type="range"] {
+.sidebar-track-banner .track-title {
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #00ffcc;
+}
+
+.sidebar-track-banner .track-author {
+  font-size: 0.65rem;
+  color: #b0c8ff;
+}
+
+.sidebar-track-banner .track-separator {
+  display: none;
+}
+
+.sidebar-track-banner .track-title,
+.sidebar-track-banner .track-author {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.sidebar-volume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 255, 204, 0.5);
+}
+
+.volume-label {
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 0.65rem;
+  color: #ffde73;
+  text-shadow: 0 0 6px rgba(255, 222, 115, 0.9);
+}
+
+.sidebar-volume input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  width: 80px;
-  height: 8px;
+  width: 120px;
+  height: 10px;
   border-radius: 4px;
   background: linear-gradient(90deg, #002b36, #004f66);
   border: 1px solid rgba(0, 255, 204, 0.7);
   box-shadow: 0 0 4px rgba(0, 255, 204, 0.5);
 }
 
-.volume-slider input[type="range"]::-webkit-slider-thumb {
+.sidebar-volume input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   background: linear-gradient(135deg, #00ffcc, #00b8ff);
   border: 1px solid rgba(0, 255, 204, 0.9);
@@ -308,9 +312,9 @@ canvas#gameCanvas {
   cursor: pointer;
 }
 
-.volume-slider input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+.sidebar-volume input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   background: linear-gradient(135deg, #00ffcc, #00b8ff);
   border: 1px solid rgba(0, 255, 204, 0.9);
@@ -318,72 +322,120 @@ canvas#gameCanvas {
   cursor: pointer;
 }
 
-.track-banner {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  z-index: 20;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 255, 204, 0.9);
-  background: radial-gradient(circle at top, rgba(4, 12, 40, 0.98), rgba(0, 0, 16, 0.96));
-  box-shadow:
-    0 0 10px rgba(0, 255, 204, 0.9),
-    0 0 26px rgba(0, 128, 255, 0.85);
+.sidebar-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(0, 10, 30, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 204, 0.25);
+}
+
+.instructions-block {
+  min-width: 0;
+}
+
+.instructions-block h3 {
   font-family: "Press Start 2P", system-ui, sans-serif;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #e7ffff;
-  transform: translateX(140%);
-  opacity: 0;
-  transition:
-    transform 220ms ease-out,
-    opacity 220ms ease-out;
-}
-
-.track-banner--visible {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.track-label {
+  font-size: 0.65rem;
+  margin: 0 0 6px;
   color: #ffde73;
-  text-shadow: 0 0 6px rgba(255, 222, 115, 0.9);
+  text-shadow: 0 0 4px rgba(255, 222, 115, 0.8);
 }
 
-.track-title {
-  color: #00ffcc;
-}
-
-.track-author {
+.instructions-block ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.7rem;
+  line-height: 1.7;
   color: #b0c8ff;
 }
 
-.track-separator {
-  opacity: 0.6;
+.instructions-block li {
+  margin-bottom: 4px;
 }
 
+.footer {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 0.65rem;
+  color: #9ba4ff;
+  opacity: 0.9;
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 900px) {
-  .main {
-    flex-direction: column;
-    align-items: center;
+  .arcade-scene__bg {
+    background-size: 200%;
   }
 
-  .game-panel {
-    width: 100%;
-  }
-
-  .game-frame {
-    margin: 0 auto;
+  .arcade-scene__screen {
+    /* Tweak top, left, width for tablet view */
+    top: 26%;
+    left: 30%;
+    width: 40%;
   }
 
   .sidebar {
-    width: 100%;
-    max-width: none;
+    right: 10px;
+    width: 220px;
+    top: auto;
+    bottom: 120px;
+    transform: none;
+  }
+
+  .controls {
+    bottom: 18%;
   }
 }
 
+@media (max-width: 700px) {
+  .arcade-scene__bg {
+    background-size: 220%;
+  }
+
+  .arcade-scene__screen {
+    /* Tweak for mobile - central cabinet fills more of narrow viewport */
+    top: 24%;
+    left: 20%;
+    width: 60%;
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .sidebar-track-banner,
+  .sidebar-volume,
+  .sidebar-instructions {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .controls {
+    bottom: 12%;
+    gap: 6px;
+  }
+
+  .btn {
+    font-size: 0.45rem;
+    padding: 5px 8px;
+  }
+
+  .header .title {
+    font-size: 1rem;
+  }
+}
