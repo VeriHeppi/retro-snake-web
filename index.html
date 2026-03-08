@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="volume-slider" id="volumeSlider">
+      <label for="musicVolume" class="volume-label">VOL</label>
+      <input type="range" id="musicVolume" min="0" max="100" value="50" />
+    </div>
+
     <div class="track-banner" id="trackBanner">
       <span class="track-label">Now Playing</span>
       <span class="track-title" id="trackTitle">—</span>
@@ -67,6 +72,7 @@
             <li><strong>Enter</strong> &mdash; Start / Restart</li>
             <li><strong>P</strong> &mdash; Pause / Resume</li>
             <li><strong>Pause</strong> &mdash; Pause / Resume</li>
+            <li><strong>Volume</strong> &mdash; Adjust music level (top left)</li>
             <li><strong>Buttons</strong> &mdash; Toggle music and SFX</li>
           </ul>
         </section>

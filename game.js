@@ -15,6 +15,7 @@ const btnToggleSfx = document.getElementById("btnToggleSfx");
 const trackBannerEl = document.getElementById("trackBanner");
 const trackTitleEl = document.getElementById("trackTitle");
 const trackAuthorEl = document.getElementById("trackAuthor");
+const musicVolumeEl = document.getElementById("musicVolume");
 
 const CELL_SIZE = 24;
 let COLS = canvas ? Math.floor(canvas.width / CELL_SIZE) : 26;
@@ -56,6 +57,7 @@ const audioManager = (() => {
   let ctxAudio = null;
   let musicEnabled = true;
   let sfxEnabled = true;
+  let musicVolume = 0.5;
   let musicConfig = null;
   let musicReady = false;
   let configPromise = null;
@@ -169,7 +171,7 @@ const audioManager = (() => {
       const audio = new Audio("assets/music/" + track.file);
       audio.preload = "auto";
       audio.loop = false;
-      audio.volume = 0.45;
+      audio.volume = musicVolume;
       audio.addEventListener("ended", handleTrackEnded);
       audio.addEventListener("error", () => {
         if (trackChangeListener) {
@@ -282,6 +284,17 @@ const audioManager = (() => {
     return sfxEnabled;
   }
 
+  function setMusicVolume(vol) {
+    musicVolume = Math.max(0, Math.min(1, vol));
+    trackMap.forEach((entry) => {
+      entry.audio.volume = musicVolume;
+    });
+  }
+
+  function getMusicVolume() {
+    return musicVolume;
+  }
+
   function getCurrentTrackInfo() {
     const entry = getCurrentEntry();
     return entry ? entry.meta : null;
@@ -304,6 +317,8 @@ const audioManager = (() => {
     loadMusicConfig,
     getCurrentTrackInfo,
     setTrackChangeListener,
+    setMusicVolume,
+    getMusicVolume,
   };
 })();
 
@@ -612,6 +627,13 @@ function attachEventListeners() {
   if (btnPause) btnPause.addEventListener("click", handlePauseButton);
   if (btnToggleMusic) btnToggleMusic.addEventListener("click", handleToggleMusic);
   if (btnToggleSfx) btnToggleSfx.addEventListener("click", handleToggleSfx);
+  if (musicVolumeEl) {
+    musicVolumeEl.addEventListener("input", () => {
+      const vol = musicVolumeEl.value / 100;
+      audioManager.setMusicVolume(vol);
+    });
+    musicVolumeEl.value = String(Math.round(audioManager.getMusicVolume() * 100));
+  }
 }
 
 function updateGridSize() {
