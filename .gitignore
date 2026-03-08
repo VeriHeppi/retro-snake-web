@@ -1,0 +1,9 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Node / tooling (not currently used, but ignored for safety)
+node_modules/
+dist/
+build/
+

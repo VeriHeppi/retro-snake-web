@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Retro Snake Arcade</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <h1 class="title">Retro Snake Arcade</h1>
+        <p class="subtitle">Classic snake with a neon arcade twist.</p>
+      </header>
+
+      <main class="main">
+        <section class="game-panel">
+          <div class="game-frame">
+            <div class="game-hud">
+              <div class="score-label">SCORE</div>
+              <div id="scoreValue" class="score-value">0</div>
+            </div>
+            <canvas id="gameCanvas" width="640" height="480"></canvas>
+            <div id="overlay" class="overlay overlay-visible">
+              <div class="overlay-content">
+                <h2 id="overlayTitle">Press Enter or Start</h2>
+                <p id="overlaySubtitle">
+                  Use Arrow Keys or WASD. Wrap around the edges. Don't hit
+                  yourself.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="btnStart" class="btn">Start / Restart</button>
+            <button id="btnToggleMusic" class="btn">Music: On</button>
+            <button id="btnToggleSfx" class="btn">SFX: On</button>
+          </div>
+        </section>
+
+        <section class="sidebar">
+          <h2>How to Play</h2>
+          <ul>
+            <li>Use Arrow Keys or WASD to steer the snake.</li>
+            <li>Eat the glowing food to grow.</li>
+            <li>You can wrap through the edges of the screen.</li>
+            <li>Avoid running into your own body.</li>
+            <li>Press Enter or the Start button to play again.</li>
+          </ul>
+
+          <h2>Controls</h2>
+          <ul>
+            <li><strong>Arrows / WASD</strong> &mdash; Move</li>
+            <li><strong>Enter</strong> &mdash; Start / Restart</li>
+            <li><strong>P</strong> &mdash; Pause / Resume</li>
+            <li><strong>Buttons</strong> &mdash; Toggle music and SFX</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>Built as a retro browser arcade experience.</p>
+      </footer>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
+
