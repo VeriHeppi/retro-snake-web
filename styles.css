@@ -167,7 +167,7 @@ canvas#gameCanvas {
 
 .controls {
   position: absolute;
-  bottom: 24%;
+  bottom: 45%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -218,8 +218,8 @@ canvas#gameCanvas {
 
 .sidebar {
   position: absolute;
-  top: 50%;
-  right: 20px;
+  top: 30%;
+  right: 20%;
   transform: translateY(-50%);
   width: 260px;
   display: flex;

@@ -10,31 +10,33 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <div class="arcade-scene">
+  <div class="arcade-scene">
+    <div class="arcade-machine">
       <div class="arcade-scene__bg"></div>
+  
       <div class="arcade-scene__screen">
-          <div class="game-hud">
-            <div class="score-label">SCORE</div>
-            <div id="scoreValue" class="score-value">0</div>
-          </div>
-          <canvas id="gameCanvas" width="624" height="480" tabindex="0"></canvas>
-          <div id="overlay" class="overlay overlay-visible">
-            <div class="overlay-content">
-              <h2 id="overlayTitle">Press Enter or Start</h2>
-              <p id="overlaySubtitle">
-                Use Arrow Keys or WASD. Wrap around the edges. Don't hit
-                yourself.
-              </p>
-            </div>
+        <div class="game-hud">
+          <div class="score-label">SCORE</div>
+          <div id="scoreValue" class="score-value">0</div>
+        </div>
+  
+        <canvas id="gameCanvas" width="624" height="480" tabindex="0"></canvas>
+  
+        <div id="overlay" class="overlay overlay-visible">
+          <div class="overlay-content">
+            <h2 id="overlayTitle">Press Enter or Start</h2>
+            <p id="overlaySubtitle">
+              Use Arrow Keys or WASD. Wrap around the edges. Don't hit yourself.
+            </p>
           </div>
         </div>
+      </div>
     </div>
+  </div>
 
     <div class="page-overlay">
       <header class="header">
         <h1 class="title">Retro Snake Arcade</h1>
-        <p class="subtitle">Classic snake with a neon arcade twist.</p>
       </header>
 
       <div class="controls">
